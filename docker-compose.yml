@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: bopis_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bopis_user
+      POSTGRES_PASSWORD: bopis_dev_password
+      POSTGRES_DB: bopis_orders
+    ports:
+      - "5433:5432"
+    volumes:
+      - bopis_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bopis_user -d bopis_orders"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: bopis_api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://bopis_user:bopis_dev_password@db:5432/bopis_orders
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./app:/code/app
+
+volumes:
+  bopis_pgdata:
